@@ -35,6 +35,7 @@ openshift_install_registry_token: "{{ lookup('env', 'OPENSHIFT_INSTALL_REGISTRY_
 openshift_install_installer_from_source: "{{ lookup('env', 'OPENSHIFT_INSTALL_INSTALLER_FROM_SOURCE')|default(false, true) }}"
 openshift_install_installer_from_source_version: "{{ lookup('env', 'OPENSHIFT_INSTALL_INSTALLER_FROM_SOURCE_VERSION')|default('master', true) }}"
 gopath: "{{ lookup('env', 'GOPATH')|default('/root/.go', true) }}"
+helm_binary: "{{ lookup('env', 'HELM_BINARY')|default('https://get.helm.sh/helm-v3.6.2-linux-amd64.tar.gz', true) }}"
 
 # Cluster Configuration
 openshift_cidr: "{{ lookup('env', 'OPENSHIFT_CIDR')|default('10.128.0.0/14', true) }}"
@@ -70,6 +71,7 @@ watch_nodes: "{{ lookup('env', 'WATCH_NODES')|default(true, true) }}"
 watch_cluster_operators: "{{ lookup('env', 'WATCH_CLUSTER_OPERATORS')|default(true, true) }}"
 watch_url_routes: "{{ lookup('env', 'WATCH_URL_ROUTES')|default('[]', true) }}"
 watch_namespaces: "{{ lookup('env', 'WATCH_NAMESPACES')|default('[openshift-etcd, openshift-apiserver, openshift-kube-apiserver, openshift-monitoring, openshift-kube-controller-manager, openshift-machine-api, openshift-kube-scheduler, openshift-ingress, openshift-sdn]', true) }}"
+watch_master_schedulable: "{{ lookup('env', 'WATCH_MASTER_SCHEDULABLE')|default('{enabled: True, label: node-role.kubernetes.io/master}', true) }}"
 cerberus_publish_status: "{{ lookup('env', 'CERBERUS_PUBLISH_STATUS')|default(true, true) }}"
 inspect_components: "{{ lookup('env', 'INSPECT_COMPONENTS')|default(false, true) }}"
 prometheus_url: "{{ lookup('env', 'PROMETHEUS_URL')|default('', true) }}"
@@ -113,3 +115,10 @@ fips: "{{ lookup('env', 'FIPS')|default(false, true) }}"
 
 # Elasticsearch
 es_server: "{{ lookup('env', 'ES_SERVER')|default('https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com:443', true) }}"
+
+# OVNKubernetes image patch
+openshift_toggle_ovn_patch: "{{ lookup('env', 'OVN_PATCH')|default(false, true) }}"
+openshift_ovn_image: "{{ lookup('env', 'OVN_IMAGE')|default('', true) }}"
+
+# RHACS
+rhacs_enable: "{{ lookup('env', 'RHACS_ENABLE')|default(false, true) }}"

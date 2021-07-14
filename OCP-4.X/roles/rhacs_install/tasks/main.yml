@@ -1,0 +1,67 @@
+---
+#
+# Creates a RHACS install in the cluster
+#
+
+- set_fact:
+    cluster_name: "perf-test"
+
+- name: Add rhacs chart repo
+  shell: |
+    helm repo add rhacs https://mirror.openshift.com/pub/rhacs/charts
+
+- set_fact:
+    central_pass: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+- debug:
+    msg: "{{ central_pass }}"
+
+- name: Install central services
+  shell: |
+    helm install -n stackrox \
+      --create-namespace stackrox-central-services rhacs/central-services \
+      --set imagePullSecrets.allowNone=true \
+      --set central.exposure.route.enabled=true \
+      --set central.adminPassword.value={{ central_pass }} \
+      --set central.exposeMonitoring=true
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Get route to central
+  shell: |
+    oc -n stackrox get routes central -o json | jq -r '.spec.host'
+  register: central_route
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Pause play until central is reachable
+  uri:
+    url: "https://{{ central_route.stdout }}/v1/metadata"
+    validate_certs: no
+  register: _result
+  until: _result.status == 200
+  retries: 60
+  delay: 5
+
+- name: Fetch the latest roxctl
+  get_url:
+    url: "https://mirror.openshift.com/pub/rhacs/assets/latest/bin/linux/roxctl"
+    dest: "{{ ansible_user_dir }}/{{ dynamic_deploy_path }}/bin/"
+    mode: 0755
+
+- name: Get secure cluster bundle
+  shell: |
+    roxctl -e https://{{ central_route.stdout }}:443 -p "{{ central_pass }}" central init-bundles generate {{ cluster_name }} \
+      --output perf-bundle.yml
+  environment:
+    PATH: "{{ lookup('env', 'PATH') }}:{{ ansible_user_dir }}/{{ dynamic_deploy_path }}/bin"
+
+- name: Install secured cluster services
+  shell: |
+    helm install -n stackrox \
+      --create-namespace stackrox-secured-cluster-services rhacs/secured-cluster-services \
+      -f perf-bundle.yml \
+      --set imagePullSecrets.allowNone=true \
+      --set clusterName={{ cluster_name }} \
+      --set exposeMonitoring=true
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
